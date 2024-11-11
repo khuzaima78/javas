@@ -1,0 +1,107 @@
+<body>
+  <div id="redoc-container"></div>
+
+  <!-- Redoc Standalone JS -->
+  <script src="https://cdn.jsdelivr.net/npm/redoc@2.0.0-rc.55/bundles/redoc.standalone.min.js"></script>
+
+  <!-- Redoc Try JS -->
+  <script src="https://cdn.jsdelivr.net/npm/redoc-try@1.4.10/dist/try.js"></script>
+
+  <!-- Axios CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <script>
+    // Initialize Redoc with the OpenAPI specification
+    initTry({
+      openApi: `https://raw.githubusercontent.com/virajgarud/opus/main/opusapi.json`,  // OpenAPI JSON URL (via CORS Proxy)
+      redocOptions: { scrollYOffset: 50 },
+      tryIt: true,  // Enable "Try It" button
+      tryOptions: {
+        url: "/api",
+
+      }
+    });
+
+    // Function to handle the Try It button clicks
+    function handleTryItClick(endpoint, method, headers, params, body) {
+      // Print request details to the console
+      console.log("Try It Button Clicked");
+      console.log("Endpoint:", endpoint);
+      console.log("Method:", method);
+      console.log("Headers:", headers);
+      console.log("Params:", params);
+      console.log("Body:", body);
+
+      // Define API base URL and target endpoint
+      const apiBaseUrl = 'https://testapi.auth1.avalara.com/ws/rest/sales';  // Base URL for the API
+      const url = apiBaseUrl + endpoint;  // Construct the full API URL
+
+      // Use CORS proxy for development (make sure it's running)
+      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+      const targetUrl = url;
+
+      // Dynamically get the token when the Try It button is clicked
+      const secureToken = prompt("Please enter your secure token:");  // Example: Prompt user for token input
+
+      if (!secureToken) {
+        console.error("No token provided");
+        return;
+      }
+
+      // Dynamically include the token in the 'secure' header
+      const secureHeader = {
+        'secure': secureToken, // Token passed dynamically from prompt input
+        'Origin': 'http://localhost:3000' // Add the Origin header to satisfy CORS requirements
+      };
+
+      // Set up Axios request configuration
+      axios({
+        method: method,               // HTTP method (GET, POST, etc.)
+        url: proxyUrl + targetUrl,    // Full URL with proxy
+        headers: { ...headers, ...secureHeader },  // Add the 'secure' header with dynamic token
+        params: params,               // URL parameters (query parameters)
+        data: body                    // Request body (for POST requests)
+      })
+      .then(response => {
+        console.log('API Response:', response.data);
+      })
+      .catch(error => {
+        // Detailed error handling
+        console.error('Error fetching data:', error);
+        if (error.response) {
+          // Response errors (e.g., 404, 500)
+          console.error('Response error:', error.response);
+        } else if (error.request) {
+          // Request errors (e.g., network errors)
+          console.error('Request error:', error.request);
+        } else {
+          // General errors
+          console.error('General error:', error.message);
+        }
+      });
+    }
+
+    // Use Redoc's API to listen to "Try It" button actions
+    window.Redoc && window.Redoc.ready.then(() => {
+      console.log("Redoc is ready!");
+      const redoc = window.Redoc;
+
+      // Hook into Redoc's tryIt functionality
+      const tryItButton = document.querySelectorAll('.tryBtn');
+      tryItButton.forEach(button => {
+        button.addEventListener('click', (event) => {
+          const parent = button.closest('.endpoint-wrapper');
+          const method = parent.querySelector('.method').textContent.trim();
+          const endpoint = parent.querySelector('.endpoint').textContent.trim();
+          const headers = {};  // Extract headers dynamically from the UI, if needed
+          const params = {};   // Extract query params dynamically, if needed
+          const body = {};     // For POST requests, extract the request body if necessary
+
+          // Call the function to handle the "Try It" button click
+          handleTryItClick(endpoint, method, headers, params, body);
+        });
+      });
+    });
+  </script>
+</body> 
+
